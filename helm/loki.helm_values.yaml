@@ -1,0 +1,56 @@
+# Based on:
+# https://grafana.com/docs/loki/latest/setup/install/helm/install-scalable/
+
+loki:
+  auth_enabled: false
+
+  # https://grafana.com/docs/loki/latest/operations/storage/retention/
+  compactor:
+    # working_directory: /data/retention
+    compaction_interval: 10m
+    retention_enabled: true
+    retention_delete_delay: 2h
+    retention_delete_worker_count: 150
+    delete_request_store: s3
+
+  ingester:
+    chunk_encoding: snappy
+
+  # https://grafana.com/docs/loki/latest/operations/storage/retention/
+  limits_config:
+    retention_period: 744h
+
+  querier:
+    # Default is 4, if you have enough memory and CPU you can increase, reduce if OOMing
+    max_concurrent: 4
+  schemaConfig:
+    configs:
+      - from: 2024-04-01
+        store: tsdb
+        object_store: s3
+        schema: v13
+        index:
+          prefix: loki_index_
+          period: 24h
+  tracing:
+    enabled: true
+
+# TODO: Should we change this to use a real Minio instance?
+minio:
+  enabled: true
+
+ingress:
+  enabled: false
+  annotations:
+    cert-manager.io/cluster-issuer: "default"
+    #nginx.ingress.kubernetes.io/enable-modsecurity: "true"
+    #nginx.ingress.kubernetes.io/enable-owasp-core-rules: "true"
+    #nginx.ingress.kubernetes.io/limit-rpm: "120"
+  hosts:
+    - loki.dev.6j0.org
+  tls:
+    - hosts:
+       - loki.dev.6j0.org
+      secretName: loki-distributed-tls
+chunksCache:
+  allocatedMemory: 2048

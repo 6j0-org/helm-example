@@ -1,0 +1,17 @@
+# Based on
+# https://github.com/getsops/sops?tab=readme-ov-file#212using-sopsyaml-conf-to-select-kms-pgp-and-age-for-new-files
+
+creation_rules:
+
+# Files named *.helm_secrets.yaml have everything encrypted
+- path_regex: .*\.helm_secrets\.yaml
+  # kms: 'arn:aws:kms:us-east-2:999999999999:key/4aaaaaaa-4518-4aaa-8aaa-aaaaaaaaaaaa'
+  pgp: >-
+    A387 BB6A CCD5 DD16 EE92  FFE8 AAC7 BBCC CC7F DD25
+
+# Files named *.secret.yaml only have data and stringData blocks encrypted.
+- path_regex: .*\.secret\.yaml
+  encrypted_regex: '^(data|stringData)$'
+  # kms: 'arn:aws:kms:us-east-2:999999999999:key/4aaaaaaa-4518-4aaa-8aaa-aaaaaaaaaaaa'
+  pgp: >-
+    A387 BB6A CCD5 DD16 EE92  FFE8 AAC7 BBCC CC7F DD25

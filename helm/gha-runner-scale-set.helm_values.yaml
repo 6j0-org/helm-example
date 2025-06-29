@@ -1,0 +1,76 @@
+# Based on https://github.com/actions/actions-runner-controller/blob/master/charts/gha-runner-scale-set/values.yaml
+
+githubConfigUrl: "https://github.com/6j0-org/"
+githubConfigSecret: pre-defined-secret
+
+## maxRunners is the max number of runners the autoscaling runner set will scale up to.
+# maxRunners: 5
+
+## minRunners is the min number of idle runners. The target number of runners created will be
+## calculated as a sum of minRunners and the number of jobs assigned to the scale set.
+# minRunners: 0
+
+# The comment in the values file says:
+#
+# If any customization is required for dind or kubernetes mode, containerMode should remain empty, and configuration should be applied to the template.
+#
+# ...but that's some bullshit. If I use only containerMode, I get this error:
+#
+# System.UnauthorizedAccessException: Access to the path '/home/runner/_work/_tool' is denied.
+#
+# which is solved with the securityContext hack below. But if I use only the template, as recommended by that comment, I get:
+#
+# Error: The Service account needs the following permissions [{"group":"","verbs":["get","list","create","delete"],"resource":"pods","subresource":""},{"group":"","verbs":["get","create"],"resource":"pods","subresource":"exec"},{"group":"","verbs":["get","list","watch"],"resource":"pods","subresource":"log"},{"group":"batch","verbs":["get","list","create","delete"],"resource":"jobs","subresource":""},{"group":"","verbs":["create","delete","get","list"],"resource":"secrets","subresource":""}] on the pod resource in the 'arc-runners' namespace. Please contact your self hosted runner administrator.
+#
+# so, I'm using both containerMode and template.
+containerMode:
+  type: "kubernetes"
+  kubernetesModeWorkVolumeClaim:
+    accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+
+        # This should probably match the value in the template below.
+        storage: 8Gi
+
+template:
+  spec:
+
+    # https://github.com/actions/runner/issues/981#issuecomment-1777916099
+    securityContext:
+      fsGroup: 1001
+
+    containers:
+    - name: runner
+
+      # TODO: It might be more efficient to just cram all of our tools into
+      # this image, because I think this image is cached at the Kubernetes node
+      # level, whereas using `container:` in the GitHub workflow may only cache
+      # the image on an individual runner...
+      image: ghcr.io/actions/actions-runner:latest
+
+      command: ["/home/runner/run.sh"]
+      env:
+        - name: ACTIONS_RUNNER_CONTAINER_HOOKS
+          value: /home/runner/k8s/index.js
+        - name: ACTIONS_RUNNER_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: ACTIONS_RUNNER_REQUIRE_JOB_CONTAINER
+          value: "false"
+      volumeMounts:
+        - name: work
+          mountPath: /home/runner/_work
+    volumes:
+      - name: work
+        ephemeral:
+          volumeClaimTemplate:
+            spec:
+              accessModes: [ "ReadWriteOnce" ]
+              #storageClassName: ""
+              resources:
+                requests:
+
+                  # This should probably match the value in the containerMode above.
+                  storage: 8Gi

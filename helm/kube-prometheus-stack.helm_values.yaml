@@ -1,0 +1,139 @@
+# `crds.enabled: true` is failing with lots of these errors:
+#
+#   ensure CRDs are installed first, resource mapping not found for name:
+#   "kube-prometheus-stack-prometheus" namespace: "kube-prometheus-stack" from
+#   "": no matches for kind "ServiceMonitor" in version
+#   "monitoring.coreos.com/v1"
+#
+# ...so I'm creating the CRDs manually. See pre-helmfile.sh.
+crds:
+  enabled: false
+
+alertmanager:
+  config:
+    route:
+      receiver: 'null'
+      routes:
+        - receiver: 'null'
+          matchers:
+            - alertname = "Watchdog"
+  ingress:
+    enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: "default"
+
+      #nginx.ingress.kubernetes.io/enable-modsecurity: "true"
+      #nginx.ingress.kubernetes.io/enable-owasp-core-rules: "true"
+
+      # oauth2-proxy - doesn't work
+      # https://oauth2-proxy.github.io/oauth2-proxy/configuration/integration#configuring-for-use-with-the-nginx-auth_request-directive
+      # nginx.ingress.kubernetes.io/auth-response-headers: Authorization
+      # nginx.ingress.kubernetes.io/auth-signin: https://$host/oauth2/start?rd=$escaped_request_uri
+      # nginx.ingress.kubernetes.io/auth-url: https://$host/oauth2/auth
+      # nginx.ingress.kubernetes.io/configuration-snippet: |
+      #   auth_request_set $name_upstream_1 $upstream_cookie__oauth2_proxy_1;
+      #   access_by_lua_block {
+      #     if ngx.var.name_upstream_1 ~= "" then
+      #       ngx.header["Set-Cookie"] = "_oauth2_proxy_1=" .. ngx.var.name_upstream_1 .. ngx.var.auth_cookie:match("(; .*)")
+      #     end
+      #   }
+
+      # vouch-proxy - doesn't work
+      # https://github.com/vouch/vouch-proxy?tab=readme-ov-file#kubernetes-nginx-ingress
+      # nginx.ingress.kubernetes.io/auth-signin: "https://oauth2-proxy.dev.6j0.org/login?url=$scheme://$http_host$request_uri&vouch-failcount=$auth_resp_failcount&X-Vouch-Token=$auth_resp_jwt&error=$auth_resp_err"
+      # nginx.ingress.kubernetes.io/auth-url: https://oauth2-proxy.dev.6j0.org/validate
+      # nginx.ingress.kubernetes.io/auth-response-headers: X-Vouch-User
+      # nginx.ingress.kubernetes.io/auth-snippet: |
+      #   # these return values are used by the @error401 call
+      #   auth_request_set $auth_resp_jwt $upstream_http_x_vouch_jwt;
+      #   auth_request_set $auth_resp_err $upstream_http_x_vouch_err;
+      #   auth_request_set $auth_resp_failcount $upstream_http_x_vouch_failcount;
+      #   # when VP is hosted externally to k8s ensure the SSL cert is valid to avoid MITM risk
+      #   # proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+      #   # proxy_ssl_session_reuse on;
+      #   # proxy_ssl_verify_depth 2;
+      #   # proxy_ssl_verify on;
+
+      # basic-auth
+      nginx.ingress.kubernetes.io/auth-type: basic
+      nginx.ingress.kubernetes.io/auth-secret: basic-auth
+      nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required'
+
+    hosts:
+      - alertmanager.dev.6j0.org
+    tls:
+     - secretName: alertmanager-general-tls
+       hosts:
+       - alertmanager.dev.6j0.org
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 1Gi
+
+grafana:
+  enabled: true
+
+  additionalDataSources:
+    - name: Loki
+      access: proxy
+      editable: false
+      orgId: 1
+      type: loki
+      url: http://loki-gateway.loki.svc.cluster.local
+      version: 1
+
+  ingress:
+    enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: "default"
+      #nginx.ingress.kubernetes.io/enable-modsecurity: "true"
+      #nginx.ingress.kubernetes.io/enable-owasp-core-rules: "true"
+    hosts:
+      - grafana.dev.6j0.org
+    tls:
+      - secretName: grafana-general-tls
+        hosts:
+        - grafana.dev.6j0.org
+    persistence:
+      enabled: true
+      accessModes:
+        - ReadWriteOnce
+      size: 1Gi
+
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+
+prometheus:
+  ingress:
+    enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: "default"
+
+      #nginx.ingress.kubernetes.io/enable-modsecurity: "true"
+      #nginx.ingress.kubernetes.io/enable-owasp-core-rules: "true"
+
+      # basic-auth
+      nginx.ingress.kubernetes.io/auth-type: basic
+      nginx.ingress.kubernetes.io/auth-secret: basic-auth
+      nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required'
+
+    hosts:
+      - prometheus.dev.6j0.org
+    tls:
+      - secretName: prometheus-general-tls
+        hosts:
+          - prometheus.dev.6j0.org
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          resources:
+            requests:
+              storage: 1Gi
+
+cleanPrometheusOperatorObjectNames: true

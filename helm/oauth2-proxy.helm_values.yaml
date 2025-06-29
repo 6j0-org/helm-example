@@ -1,0 +1,49 @@
+# Keycloak
+#config:
+#  clientID: "oauth2-proxy"
+#
+#  # https://oauth2-proxy.github.io/oauth2-proxy/configuration/overview#general-provider-options
+#  configFile: |-
+#    code_challenge_method = "S256"
+#    email_domains = [ "*" ]
+#    oidc_issuer_url = "https://keycloak.dev.6j0.org/realms/master"
+#    provider = "keycloak-oidc"
+#    redirect_url = "https://oauth2-proxy.dev.6j0.org/oauth2/callback"
+#    reverse_proxy = true
+#    upstreams = [ "file:///dev/null" ]
+#    set_xauthrequest = true
+#    silence_ping_logging = true
+#    whitelist_domains = [".dev.6j0.org"]
+
+# Google
+config:
+  clientID: "594949494949-2htsorbbi7t6iinrk0guchm807r6dokf.apps.googleusercontent.com"
+  configFile: |-
+    login_url = "https://accounts.google.com/o/oauth2/auth"
+    redeem_url = "https://oauth2.googleapis.com/token"
+    scope = "openid email profile"
+    provider = "google"
+    skip_provider_button = "true"
+    pass_access_token = "true"
+    email_domains = [ "*" ]
+    set_xauthrequest = "true"
+    set_authorization_header = "true"
+
+#    userinfo_url = "https://www.googleapis.com/oauth2/v3/userinfo"
+#    redirect_url = "https://oauth2-proxy.dev.6j0.org/oauth2/callback"
+
+cookie_samesite: "lax"
+cookie_secure: true
+cookie_expire: "12h"
+session_store_type: "cookie"
+
+ingress:
+  enabled: true
+  hosts:
+    - oauth2-proxy.dev.6j0.org
+  annotations:
+    cert-manager.io/cluster-issuer: "default"
+  tls:
+    - secretName: oauth2-proxy-tls
+      hosts:
+        - oauth2-proxy.dev.6j0.org

@@ -1,0 +1,149 @@
+helmDefaults:
+  wait: true
+repositories:
+  - name: ingress-nginx
+    url: https://kubernetes.github.io/ingress-nginx
+  - name: metrics-server
+    url: https://kubernetes-sigs.github.io/metrics-server/
+  - name: prometheus-community
+    url: https://prometheus-community.github.io/helm-charts
+  - name: cnpg
+    url: https://cloudnative-pg.github.io/charts
+  - name: minio-operator
+    url: https://operator.min.io
+  - name: grafana
+    url: https://grafana.github.io/helm-charts
+  - name: oauth2-proxy
+    url: https://oauth2-proxy.github.io/manifests
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+  - name: vouch
+    url: https://vouch.github.io/helm-charts/
+  - name: nvidia
+    url: https://helm.ngc.nvidia.com/nvidia
+releases:
+  - name: metrics-server
+    namespace: metrics-server
+    chart: metrics-server/metrics-server
+    version: 3.12.1
+  - name: ingress-nginx
+    namespace: ingress-nginx
+    chart: ingress-nginx/ingress-nginx
+    version: 4.11.2
+    values:
+      - helm/ingress-nginx.helm_values.yaml
+  - name: gpu-operator
+    namespace: gpu-operator
+    chart: nvidia/gpu-operator
+    version: 24.6.2
+  - name: keycloak
+    namespace: keycloak
+    chart: bitnami/keycloak
+    version: 22.2.3
+    values:
+      - helm/keycloak.helm_values.yaml
+    secrets:
+      - helm/keycloak.helm_secrets.yaml
+  - name: oauth2-proxy
+    namespace: oauth2-proxy
+    chart: oauth2-proxy/oauth2-proxy
+    version: 7.7.17
+    values:
+      - helm/oauth2-proxy.helm_values.yaml
+    secrets:
+      - helm/oauth2-proxy.helm_secrets.yaml
+  - name: vouch
+    namespace: vouch
+    chart: vouch/vouch
+    version: 3.2.0
+    values:
+      - helm/vouch.helm_values.yaml
+    secrets:
+      - helm/vouch.helm_secrets.yaml
+  - name: website
+    namespace: website
+    chart: oci://registry.gitlab.com/devopscoop/charts/app
+    version: 0.4.0
+    values:
+      - helm/website.helm_values.yaml
+  - name: ghost
+    namespace: ghost
+    chart: oci://registry-1.docker.io/bitnamicharts/ghost
+    version: 21.1.27
+    values:
+      - helm/ghost.helm_values.yaml
+    secrets:
+      - helm/ghost.helm_secrets.yaml
+
+  - name: arc
+    namespace: arc-systems
+    chart: oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller
+    version: 0.9.3
+  # gha-runner-scale-set-controller must be installed before you uncomment and install gha-runner-scale-set
+  # - name: arc-runner-set
+  #   namespace: arc-runners
+  #   chart: oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
+  #   version: 0.9.3
+  #   values:
+  #     - gha-runner-scale-set.helm_values.yaml
+
+  # I had to manually install CRDs for this chart. The `crds.enabled: true` setting didn't work.
+  - name: kube-prometheus-stack
+    namespace: kube-prometheus-stack
+    chart: prometheus-community/kube-prometheus-stack
+    version: 61.9.0
+    values:
+      - helm/kube-prometheus-stack.helm_values.yaml
+    secrets:
+      - helm/kube-prometheus-stack.helm_secrets.yaml
+
+  - name: cnpg
+    namespace: cnpg-system
+    chart: cnpg/cloudnative-pg
+    version: 0.22.0
+
+  # TODO: Use a proper minio install instead of the subchart in Loki
+  # https://min.io/docs/minio/kubernetes/upstream/operations/install-deploy-manage/deploy-operator-helm.html
+  # This needs to be installed before Loki
+  - name: minio-operator
+   namespace: minio-operator
+   chart: minio-operator/operator
+   version: 6.0.3
+   values:
+     - helm/minio-operator.helm_values.yaml
+   secrets:
+     - helm/minio-operator.helm_secrets.yaml
+
+  - name: loki
+    namespace: loki
+    chart: grafana/loki
+    version: 6.12.0
+    values:
+      - helm/loki.helm_values.yaml
+    secrets:
+      - helm/loki.helm_secrets.yaml
+
+  - name: promtail
+    namespace: promtail
+    chart: grafana/promtail
+    version: 6.16.5
+    values:
+      - helm/promtail.helm_values.yaml
+
+  - name: rabbitmq
+    namespace: example-app
+    chart: oci://registry-1.docker.io/bitnamicharts/rabbitmq
+    version: 14.6.6
+    values:
+      - helm/rabbitmq.helm_values.yaml
+    secrets:
+      - helm/rabbitmq.helm_secrets.yaml
+
+  - name: example-gpu-app
+    namespace: example-app
+    chart: oci://registry.gitlab.com/devopscoop/charts/app
+    version: 0.4.0
+    values:
+      - helm/example-gpu-app.example-app.helm_values.yaml
+    secrets:
+      - helm/example-gpu-app.example-app.helm_secrets.yaml

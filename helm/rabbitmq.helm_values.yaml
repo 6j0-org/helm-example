@@ -1,0 +1,16 @@
+auth:
+  username: "guest"
+persistence:
+  enabled: false
+  size: 1Gi
+ingress:
+  enabled: true
+  hostname: rabbitmq.dev.6j0.org
+  annotations:
+    cert-manager.io/cluster-issuer: "default"
+networkPolicy:
+  kubeAPIServerPorts: [6443]
+metrics:
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "{{ .Values.service.ports.metrics }}"

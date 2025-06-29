@@ -1,0 +1,66 @@
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  helmfile:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-region: us-east-2
+        role-to-assume: arn:aws:iam::999999999999:role/github-actions-dev-k8s
+
+    # Ensure all GitHub Actions are pinned to the full commit SHA for security and reproducible builds
+    # https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions
+    #- uses: zgosalvez/github-actions-ensure-sha-pinned-actions@b88cd0aad2c36a63e42c71f81cb1958fed95ac87
+
+    - uses: actions/cache@v4
+      id: cache
+      with:
+        path: |
+          .cache/helm
+        key: ${{ runner.os }}-${{ hashFiles('helmfile.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-
+    - uses: quipper/setup-aws-cli-action@a1d3179972f5c59c5bf678a5aba355032343e58d
+    - run: aws eks update-kubeconfig --region us-east-2 --name dev
+    - uses: mdgreenwald/mozilla-sops-action@v1.6.0
+    - uses: mikefarah/yq@v4.44.3
+
+    # Overoptimizing...
+    # - if: ${{ (github.ref == 'refs/heads/main') && (steps.raw.outputs.src == 'true') }}
+    - if: ${{ (github.ref == 'refs/heads/main') }}
+      run: raw/pre-helmfile.sh
+
+    - if: github.event_name == 'pull_request'
+      uses: helmfile/helmfile-action@v1.9.2
+      with:
+        helmfile-version: 'v0.159.0'
+        helm-version: 'v3.15.3'
+        helm-plugins: >
+          https://github.com/databus23/helm-diff,
+          https://github.com/jkroepke/helm-secrets
+        helmfile-args: diff
+      #continue-on-error: true
+    - if: github.ref == 'refs/heads/main'
+      uses: helmfile/helmfile-action@v1.9.2
+      with:
+        helmfile-version: 'v0.159.0'
+        helm-version: 'v3.15.3'
+        helm-plugins: >
+          https://github.com/databus23/helm-diff,
+          https://github.com/jkroepke/helm-secrets
+        helmfile-args: apply
+    - if: ${{ (github.ref == 'refs/heads/main') }}
+      run: raw/post-helmfile.sh

@@ -1,0 +1,3 @@
+# https://github.com/getsops/sops?tab=readme-ov-file#48showing-diffs-in-cleartext-in-git
+*.helm_secrets.yaml diff=sopsdiffer
+*.secret.yaml diff=sopsdiffer

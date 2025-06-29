@@ -1,0 +1,31 @@
+ghostUsername: "Jeff"
+ghostEmail: "jeff@gmail.com"
+ghostBlogTitle: 6j0.org Blog
+ghostHost: "blog.dev.6j0.org"
+ghostEnableHttps: true
+#smtpHost: ""
+#smtpPort: ""
+#smtpUser: ""
+#smtpPassword: ""
+#smtpService: ""
+#smtpProtocol: ""
+allowEmptyPassword: false
+replicaCount: 1
+ingress:
+  enabled: true
+  hostname: blog.dev.6j0.org
+  annotations:
+    cert-manager.io/cluster-issuer: default-http
+  tls: true
+persistence:
+  storageClass: "efs"
+  accessModes:
+    - ReadWriteMany
+  size: 1Gi
+mysql:
+  enabled: true
+  architecture: replication
+  primary:
+    persistence:
+      size: 1Gi
+    resourcesPreset: "small"

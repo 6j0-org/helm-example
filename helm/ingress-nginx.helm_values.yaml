@@ -1,0 +1,16 @@
+controller:
+
+  # https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/configmap/
+  config:
+    allow-snippet-annotations: "true"
+    limit-req-status-code: "429"
+
+  ingressClassResource:
+    default: true
+  replicaCount: 3
+  service:
+    externalTrafficPolicy: "Local"
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+tcp:
+  55001: "demo-bot/rabbitmq:5672"

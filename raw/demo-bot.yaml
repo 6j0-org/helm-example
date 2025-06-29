@@ -1,0 +1,76 @@
+---
+# This submits a random number of things (between 2 and 5) at a random time interval (between 3 to 12 hours).
+
+# Based on:
+# https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#create-configmaps-from-directories
+# https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#populate-a-volume-with-data-stored-in-a-configmap
+# https://kubernetes.io/docs/tasks/inject-data-application/distribute-credentials-secure/#create-a-pod-that-has-access-to-the-secret-data-through-a-volume
+---
+apiVersion: v1
+automountServiceAccountToken: true
+kind: ServiceAccount
+metadata:
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::999999999999:role/keys
+  name: demo-bot
+  namespace: demo-bot
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: demo-bot
+  namespace: demo-bot
+spec:
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          initContainers:
+            - name: copy-keys
+              image: "amazon/aws-cli:2.17.29"
+              command: ['sh', '-c', "aws s3 cp --recursive s3://keys-dev-6j0-org-us-east-2/demo-bot /keys"]
+              volumeMounts:
+                - name: workdir
+                  mountPath: "/keys"
+          containers:
+
+          # Complicated `$` and env var escaping rules here: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#container-v1-core
+          # Random number generation here: https://stackoverflow.com/questions/1194882/how-to-generate-random-number-in-bash
+          # Using `sleep` at the beginning to add a random delay - 21600 is number of seconds in 6 hours.
+          - command:
+            - /bin/bash
+            - -c
+            - DELAY=$$(($$RANDOM % 21600));
+              echo "Sleeping ${DELAY} seconds...";
+              sleep $DELAY;
+              NUM_THINGS=$$((2 + $RANDOM % 4));
+              /app/examples/demo-app/core/node_modules/.bin/demo-app
+                -k /keys/key.json
+                -n $NUM_THINGS
+                -s $NUM_THINGS
+
+            # Using existing worker-app secret
+            env:
+            - name: RPC_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  key: RPC_ENDPOINT
+                  name: worker-app
+
+            image: ghcr.io/6j0-org/upa/demo-app:sha-fffffff
+            imagePullPolicy: IfNotPresent
+            name: demo-bot
+            volumeMounts:
+            - mountPath: /keys
+              name: workdir
+          volumes:
+          - emptyDir: {}
+            name: workdir
+          imagePullSecrets:
+          - name: regcred
+          restartPolicy: OnFailure
+          serviceAccount: demo-bot
+          serviceAccountName: demo-bot
+  schedule: "23 */3 * * *"
+  suspend: true
