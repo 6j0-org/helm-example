@@ -44,7 +44,7 @@ jobs:
       run: raw/pre-helmfile.sh
 
     - if: github.event_name == 'pull_request'
-      uses: helmfile/helmfile-action@v1.9.2
+      uses: helmfile/helmfile-action@v2.0.4
       with:
         helmfile-version: 'v0.159.0'
         helm-version: 'v3.15.3'
@@ -54,7 +54,7 @@ jobs:
         helmfile-args: diff
       #continue-on-error: true
     - if: github.ref == 'refs/heads/main'
-      uses: helmfile/helmfile-action@v1.9.2
+      uses: helmfile/helmfile-action@v2.0.4
       with:
         helmfile-version: 'v0.159.0'
         helm-version: 'v3.15.3'
