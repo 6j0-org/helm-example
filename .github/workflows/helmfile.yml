@@ -36,7 +36,7 @@ jobs:
     - uses: quipper/setup-aws-cli-action@a1d3179972f5c59c5bf678a5aba355032343e58d
     - run: aws eks update-kubeconfig --region us-east-2 --name dev
     - uses: mdgreenwald/mozilla-sops-action@v1.6.0
-    - uses: mikefarah/yq@v4.44.3
+    - uses: mikefarah/yq@v4.46.1
 
     # Overoptimizing...
     # - if: ${{ (github.ref == 'refs/heads/main') && (steps.raw.outputs.src == 'true') }}
