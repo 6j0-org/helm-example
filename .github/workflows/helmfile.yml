@@ -33,7 +33,7 @@ jobs:
         key: ${{ runner.os }}-${{ hashFiles('helmfile.lock') }}
         restore-keys: |
           ${{ runner.os }}-
-    - uses: quipper/setup-aws-cli-action@a1d3179972f5c59c5bf678a5aba355032343e58d
+    - uses: quipper/setup-aws-cli-action@df487d426bce2db679bad390d6c0e58139af353f
     - run: aws eks update-kubeconfig --region us-east-2 --name dev
     - uses: mdgreenwald/mozilla-sops-action@v1.6.0
     - uses: mikefarah/yq@v4.44.3
