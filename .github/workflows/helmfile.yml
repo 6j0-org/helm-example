@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: aws-actions/configure-aws-credentials@v4
+    - uses: aws-actions/configure-aws-credentials@v5
       with:
         aws-region: us-east-2
         role-to-assume: arn:aws:iam::999999999999:role/github-actions-dev-k8s
